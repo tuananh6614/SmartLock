@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "360774980468",
+    "project_id": "smartlock-ccd1d",
+    "storage_bucket": "smartlock-ccd1d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:360774980468:android:6d217dcfc513b0ae9bd221",
+        "android_client_info": {
+          "package_name": "com.SmartLock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdjKUec0aGVzExn1dPk-LkIraK7VqUJxk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
