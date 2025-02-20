@@ -138,8 +138,8 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.overlay}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Animatable.View animation="fadeInDown" duration={600} style={styles.headerContainer}>
-            <Text style={styles.title}>Login Now</Text>
-            <Text style={styles.subtitle}>Welcome back to SmartLock</Text>
+            <Text style={styles.title}>Đăng nhập ngay</Text>
+            <Text style={styles.subtitle}>Chào mừng bạn đến với SmartLock</Text>
           </Animatable.View>
 
           <Animatable.View animation="fadeInUp" duration={800} delay={200} style={styles.formContainer}>

@@ -1,22 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-  ImageBackground,
-  Platform
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TextInput, 
+  ScrollView, 
+  TouchableOpacity, 
+  Alert, 
+  ImageBackground 
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
 
-const backgroundImageUrl =
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1170&q=80';
+const firebaseConfig = {
+  apiKey: "AIzaSyDdjKUec0aGVzExn1dPk-LkIraK7VqUJxk",
+  authDomain: "smartlock-ccd1d.firebaseapp.com",
+  projectId: "smartlock-ccd1d",
+  storageBucket: "smartlock-ccd1d.appspot.com",
+  messagingSenderId: "360774980468",
+  appId: "1:360774980468:android:6d217dcfc513b0ae9bd221",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -36,7 +47,6 @@ const RegisterScreen = ({ navigation }) => {
     special: false,
   });
   const [inputErrors, setInputErrors] = useState({});
-  const auth = getAuth();
 
   useEffect(() => {
     if (email) {
@@ -56,23 +66,23 @@ const RegisterScreen = ({ navigation }) => {
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmailValid(re.test(email));
+    const valid = re.test(email);
+    setEmailValid(valid);
     setInputErrors((prev) => ({
       ...prev,
-      email: re.test(email) ? null : 'Email không hợp lệ.',
+      email: valid ? null : 'Email không hợp lệ.',
     }));
   };
 
-  const validatePassword = (password) => {
+  const validatePassword = (pwd) => {
     const strength = {
-      length: password.length >= 8,
-      upper: /[A-Z]/.test(password),
-      lower: /[a-z]/.test(password),
-      number: /[0-9]/.test(password),
-      special: /[!@#\$%^&*(),.?":{}|<>~`]/.test(password),
+      length: pwd.length >= 8,
+      upper: /[A-Z]/.test(pwd),
+      lower: /[a-z]/.test(pwd),
+      number: /[0-9]/.test(pwd),
+      special: /[!@#\$%^&*(),.?":{}|<>]/.test(pwd),
     };
     setPasswordStrength(strength);
-
     const isStrong = Object.values(strength).every(Boolean);
     setInputErrors((prev) => ({
       ...prev,
@@ -81,7 +91,7 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
-    const errors = {};
+    let errors = {};
     if (!emailValid) errors.email = 'Email không hợp lệ.';
     const { length, upper, lower, number, special } = passwordStrength;
     if (!(length && upper && lower && number && special)) {
@@ -100,17 +110,35 @@ const RegisterScreen = ({ navigation }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Cập nhật thông tin người dùng
       await updateProfile(user, {
         displayName: name,
         phoneNumber: phone,
       });
 
-      Alert.alert('Đăng ký thành công', 'Bạn đã đăng ký thành công!');
-      navigation.navigate('Login');
+      // Lưu thông tin đăng ký vào Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        email,
+        displayName: name,
+        phone,
+        dob,
+        password,
+      });
+
+      // Để đảm bảo giao diện đã được cập nhật xong, ta thêm delay trước khi hiện Alert
+      setTimeout(() => {
+        Alert.alert(
+          'Đăng ký thành công',
+          'Bạn đã đăng ký thành công!',
+          [
+            { text: 'OK', onPress: () => navigation.navigate('Login') }
+          ],
+          { cancelable: false }
+        );
+      }, 100);
     } catch (error) {
       console.error('Lỗi đăng ký:', error);
       let errorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
-
       switch (error.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'Email này đã được sử dụng.';
@@ -129,19 +157,17 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <ImageBackground source={{ uri: backgroundImageUrl }} style={styles.backgroundImage}>
-      {/* Overlay mờ để dễ nhìn form */}
+    <ImageBackground 
+      source={{ uri: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1170&q=80' }} 
+      style={styles.backgroundImage}
+    >
       <View style={styles.overlay}>
-
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Animatable.View animation="fadeInDown" duration={600} style={styles.formWrapper}>
-            {/* Tiêu đề */}
-            <Text style={styles.title}>Register Now</Text>
-            <Text style={styles.subtitle}>Create your account</Text>
-
-            {/* Form đăng ký */}
+            <Text style={styles.title}>Đăng ký ngay</Text>
+            <Text style={styles.subtitle}>Tạo tài khoản của bạn</Text>
             <Animatable.View animation="fadeInUp" duration={800} delay={200} style={styles.formContainer}>
-              {/* Email */}
+              {/* Email Input */}
               <View style={styles.inputContainer}>
                 <Ionicons name="mail-outline" size={20} style={styles.inputIcon} />
                 <TextInput
@@ -159,16 +185,13 @@ const RegisterScreen = ({ navigation }) => {
                   <Ionicons
                     name={emailCheckIcon}
                     size={20}
-                    style={[
-                      styles.inputIconRight,
-                      { color: emailValid ? '#4CAF50' : '#F44336' },
-                    ]}
+                    style={[styles.inputIconRight, { color: emailValid ? '#4CAF50' : '#F44336' }]}
                   />
                 )}
               </View>
               {inputErrors.email && <Text style={styles.errorText}>{inputErrors.email}</Text>}
 
-              {/* Họ và tên */}
+              {/* Name Input */}
               <View style={styles.inputContainer}>
                 <Ionicons name="person-outline" size={20} style={styles.inputIcon} />
                 <TextInput
@@ -181,7 +204,7 @@ const RegisterScreen = ({ navigation }) => {
               </View>
               {inputErrors.name && <Text style={styles.errorText}>{inputErrors.name}</Text>}
 
-              {/* Số điện thoại */}
+              {/* Phone Input */}
               <View style={styles.inputContainer}>
                 <Ionicons name="call-outline" size={20} style={styles.inputIcon} />
                 <TextInput
@@ -195,7 +218,7 @@ const RegisterScreen = ({ navigation }) => {
               </View>
               {inputErrors.phone && <Text style={styles.errorText}>{inputErrors.phone}</Text>}
 
-              {/* Ngày sinh */}
+              {/* Date of Birth Input */}
               <View style={styles.inputContainer}>
                 <Ionicons name="calendar-outline" size={20} style={styles.inputIcon} />
                 <TextInput
@@ -208,44 +231,44 @@ const RegisterScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => setShowDatePicker(true)}>
                   <Ionicons name="chevron-down-outline" size={20} style={styles.inputIconRight} />
                 </TouchableOpacity>
-                {showDatePicker && (
-                  <DateTimePicker
-                    testID="dateTimePicker"
-                    value={dob ? new Date(dob) : new Date()}
-                    mode="date"
-                    is24Hour={true}
-                    display="default"
-                    onChange={onChangeDob}
-                  />
-                )}
               </View>
+              {showDatePicker && (
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={dob ? new Date(dob) : new Date()}
+                  mode="date"
+                  is24Hour={true}
+                  display="default"
+                  onChange={onChangeDob}
+                />
+              )}
               {inputErrors.dob && <Text style={styles.errorText}>{inputErrors.dob}</Text>}
 
-              {/* Mật khẩu */}
+              {/* Password Input */}
               <View style={styles.inputContainer}>
                 <Ionicons name="lock-closed-outline" size={20} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, inputErrors.password && styles.inputError]}
                   placeholder="Mật khẩu"
                   placeholderTextColor="#ddd"
+                  secureTextEntry={!showPassword}
                   onChangeText={(value) => {
                     setPassword(value);
                     validatePassword(value);
                   }}
                   value={password}
-                  secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    style={styles.inputIconRight}
+                  <Ionicons 
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                    size={20} 
+                    style={styles.inputIconRight} 
                   />
                 </TouchableOpacity>
               </View>
               {inputErrors.password && <Text style={styles.errorText}>{inputErrors.password}</Text>}
 
-              {/* Checklist mật khẩu */}
+              {/* Password Checklist */}
               <View style={styles.passwordChecklist}>
                 <Text style={[styles.checkItem, passwordStrength.length && styles.checkItemValid]}>
                   • Tối thiểu 8 ký tự
@@ -264,12 +287,12 @@ const RegisterScreen = ({ navigation }) => {
                 </Text>
               </View>
 
-              {/* Nút đăng ký */}
+              {/* Register Button */}
               <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
                 <Text style={styles.registerButtonText}>Đăng ký</Text>
               </TouchableOpacity>
 
-              {/* Link chuyển sang Login */}
+              {/* Link đến màn hình Đăng nhập */}
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.loginText}>Đã có tài khoản? Đăng nhập</Text>
               </TouchableOpacity>
@@ -281,17 +304,14 @@ const RegisterScreen = ({ navigation }) => {
   );
 };
 
-// ========================
-//        STYLES
-// ========================
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-    resizeMode: 'cover', // Để ảnh nền cover toàn màn hình
+    resizeMode: 'cover',
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)', // Lớp phủ mờ để dễ nhìn form
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -316,10 +336,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   formContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)', // Form trong suốt
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 10,
     padding: 20,
-    // Shadow (Android + iOS)
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 2 },
@@ -346,7 +365,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#fff',
-    padding: 0,
   },
   inputError: {
     borderColor: '#F44336',

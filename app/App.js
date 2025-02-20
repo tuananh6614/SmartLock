@@ -38,10 +38,40 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={user ? "Home" : "Register"}>
-        <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Đăng ký' }} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Đăng nhập' }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'SmartLock' }} />
-        <Stack.Screen name="AdminHomeScreen" component={AdminHomeScreen} options={{ title: 'Trang Quản Trị' }} />
+        <Stack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ title: 'Đăng ký' ,
+            headerBackVisible: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{
+            title: 'Đăng nhập',
+            // Chỉ ẩn nút back, vẫn giữ header
+            headerBackVisible: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ title: 'SmartLock',
+            headerBackVisible: false,
+            gestureEnabled: false,
+           }}
+        />
+        <Stack.Screen
+          name="AdminHomeScreen"
+          component={AdminHomeScreen}
+          options={{ title: 'Trang Quản Trị' ,
+            headerBackVisible: false,
+            gestureEnabled: false,
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
