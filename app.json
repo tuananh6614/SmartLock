@@ -10,7 +10,7 @@
     "splash": {
       "image": "./app/assets/adaptive-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000FF"
     },
     "ios": {
       "supportsTablet": true
@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/splash-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#000000FF"
       },
       "package": "com.tuananhdzvcl.Smartlock"
     },

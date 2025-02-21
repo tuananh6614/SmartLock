@@ -11,20 +11,20 @@ import {
   ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { useNavigation } from '@react-navigation/native';
 
 const HomeScreen = () => {
   const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('devices');
   const navigation = useNavigation();
   const auth = getAuth();
 
   useEffect(() => {
-    // Theo dõi trạng thái đăng nhập
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
     });
-    // Vô hiệu hóa nút back phần cứng trên Android
     const backHandler = BackHandler.addEventListener("hardwareBackPress", () => true);
     return () => {
       unsubscribe();
@@ -32,18 +32,16 @@ const HomeScreen = () => {
     };
   }, []);
 
-  // Hàm đăng xuất và chuyển hướng về màn hình đăng nhập
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigation.replace('Login'); // Chuyển về màn hình đăng nhập
+      navigation.replace('Login');
     } catch (error) {
       Alert.alert("Lỗi", "Không thể đăng xuất, vui lòng thử lại.");
       console.error("Lỗi đăng xuất:", error);
     }
   };
 
-  // Hàm hiển thị hộp thoại xác nhận đăng xuất
   const confirmLogout = () => {
     Alert.alert(
       "Xác nhận đăng xuất",
@@ -56,10 +54,31 @@ const HomeScreen = () => {
     );
   };
 
+  const renderTabItem = (tabName, iconName, label) => (
+    <TouchableOpacity 
+      style={styles.tabItem} 
+      onPress={() => setActiveTab(tabName)}
+    >
+      <Ionicons 
+        name={iconName} 
+        size={28} 
+        color={activeTab === tabName ? "#1E90FF" : "gray"} 
+      />
+      <Text style={[styles.tabLabel, activeTab === tabName && styles.activeTabLabel]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
-      {/* Header chứa thông tin người dùng và nút đăng xuất */}
-      <View style={styles.header}>
+      {/* Header với nền gradient */}
+      <LinearGradient 
+        colors={['#1E90FF', '#00BFFF']} 
+        start={[0, 0]} 
+        end={[1, 0]} 
+        style={styles.header}
+      >
         <View style={styles.userInfo}>
           {user ? (
             <>
@@ -71,20 +90,25 @@ const HomeScreen = () => {
               )}
             </>
           ) : (
-            <Text>Đang tải thông tin người dùng...</Text>
+            <Text style={styles.loadingText}>Đang tải thông tin người dùng...</Text>
           )}
         </View>
+        {/* Nút đăng xuất nổi bật */}
         <TouchableOpacity style={styles.logoutButton} onPress={confirmLogout}>
-          <Ionicons name="log-out-outline" size={24} color="#ED190DFF" />
-          <Text style={styles.logoutText}>Đăng xuất</Text>
+          <Ionicons 
+            name="log-out-outline" 
+            size={20} 
+            color="#fff" 
+            style={{ marginRight: 8 }} 
+          />
+          <Text style={styles.logoutButtonText}>Đăng xuất</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
-      {/* Nội dung chính (ví dụ: phần camera và tab bar) */}
+      {/* Nội dung chính */}
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.cameraContainer}>
           <View style={styles.videoFrame}>
-            {/* Placeholder cho video */}
             <View style={styles.videoPlaceholder}>
               <Text style={styles.videoText}>Video Placeholder</Text>
             </View>
@@ -100,19 +124,11 @@ const HomeScreen = () => {
         </View>
       </ScrollView>
 
+      {/* Tab Bar */}
       <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="home-outline" size={24} color="gray" />
-          <Text style={styles.tabLabel}>Thiết bị</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="images-outline" size={24} color="gray" />
-          <Text style={styles.tabLabel}>Thư viện</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="wifi-outline" size={24} color="gray" />
-          <Text style={styles.tabLabel}>Kết nối thông minh</Text>
-        </TouchableOpacity>
+        {renderTabItem('devices', 'home-outline', 'Thiết bị')}
+        {renderTabItem('gallery', 'images-outline', 'Thư viện')}
+        {renderTabItem('smart', 'wifi-outline', 'Kết nối')}
       </View>
     </View>
   );
@@ -121,13 +137,12 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
   },
   header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -138,71 +153,100 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#fff',
     marginRight: 10,
   },
+  loadingText: {
+    color: '#fff',
+  },
   userPhoto: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   logoutButton: {
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ED1C24', // Màu đỏ nổi bật
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   contentContainer: {
     flexGrow: 1,
+    padding: 16,
   },
   cameraContainer: {
-    padding: 16,
-    flex: 1,
+    marginBottom: 80,
   },
   videoFrame: {
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 10,
-    height: 200,
+    height: 220,
+    backgroundColor: '#000',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
   videoPlaceholder: {
     flex: 1,
-    backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
   },
   videoText: {
-    color: 'white',
-    fontSize: 18,
+    color: '#fff',
+    fontSize: 20,
   },
   notification: {
     position: 'absolute',
-    bottom: 10,
-    left: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 5,
-    borderRadius: 5,
+    bottom: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
   notificationText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 12,
   },
   editButton: {
-    backgroundColor: '#eee',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#1E90FF',
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   editButtonText: {
-    color: 'black',
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#ddd',
+    backgroundColor: '#fff',
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: 'white',
   },
   tabItem: {
     alignItems: 'center',
@@ -210,6 +254,11 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 12,
     color: 'gray',
+    marginTop: 4,
+  },
+  activeTabLabel: {
+    color: '#1E90FF',
+    fontWeight: '600',
   },
 });
 
