@@ -16,7 +16,7 @@ import { initializeApp } from 'firebase/app';
 import {
   getFirestore,
   collection,
-  getDocs,
+  onSnapshot,
   deleteDoc,
   doc,
   updateDoc
@@ -57,22 +57,18 @@ const AdminHomeScreen = () => {
 
   const navigation = useNavigation();
 
-  // Lấy danh sách users từ Firestore
-  const fetchUsers = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'users'));
+  // Lắng nghe thay đổi realtime từ Firestore
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), (querySnapshot) => {
       const usersList = querySnapshot.docs.map(docSnap => ({
         id: docSnap.id,
         ...docSnap.data(),
       }));
       setUsers(usersList);
-    } catch (error) {
+    }, (error) => {
       console.error("Error fetching users:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -142,7 +138,6 @@ const AdminHomeScreen = () => {
             try {
               await deleteDoc(doc(db, 'users', userId));
               await remove(ref(rtdb, 'users/' + userId));
-              fetchUsers();
             } catch (error) {
               Alert.alert("Error", "Unable to delete user, please try again.");
             }
@@ -199,7 +194,6 @@ const AdminHomeScreen = () => {
       // Cập nhật Firestore và Realtime Database với field 'ID'
       await updateDoc(userDocRef, { ID: newIDs });
       await update(ref(rtdb, `users/${selectedUserForFingerprint}`), { ID: newIDs });
-      fetchUsers();
       setFingerprintInputVisible(false);
     } catch (error) {
       Alert.alert("Error", "Unable to add fingerprint, please try again.");
@@ -218,7 +212,6 @@ const AdminHomeScreen = () => {
         const updatedIDs = currentIDs.filter(id => id !== fpId);
         await updateDoc(userDocRef, { ID: updatedIDs });
         await update(ref(rtdb, `users/${userId}`), { ID: updatedIDs });
-        fetchUsers();
       }
     } catch (error) {
       Alert.alert("Error", "Unable to remove fingerprint, please try again.");
@@ -361,7 +354,6 @@ const AdminHomeScreen = () => {
                 <Text style={styles.noUserText}>Chưa có người dùng nào.</Text>
               ) : (
                 users.map((user, index) => {
-                  // Nếu user.ID không phải là mảng, kiểm tra nếu là string thì chuyển thành mảng, ngược lại dùng mảng rỗng.
                   const ids =
                     Array.isArray(user.ID)
                       ? user.ID
