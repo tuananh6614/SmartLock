@@ -9,6 +9,7 @@ import {
   Alert, 
   Platform,
   Image,
+  KeyboardAvoidingView
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -169,161 +170,166 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Logo hình tròn nhỏ ở trên đầu */}
-      <View style={styles.logoWrapper}>
-        <View style={styles.logoCircle}>
-          {/* Thay thế bằng ảnh logo của bạn (URL hoặc require) */}
-          <Image
-            source={require('../assets/icon.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
+      <View style={styles.container}>
+        {/* Logo hình tròn nhỏ ở trên đầu */}
+        <View style={styles.logoWrapper}>
+          <View style={styles.logoCircle}>
+            <Image
+              source={require('../assets/icon.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
         </View>
-      </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Animatable.View animation="fadeInDown" duration={600} style={styles.formWrapper}>
-          <Text style={styles.title}>Đăng ký ngay</Text>
-          <Text style={styles.subtitle}>Tạo tài khoản của bạn</Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <Animatable.View animation="fadeInDown" duration={600} style={styles.formWrapper}>
+            <Text style={styles.title}>Đăng ký ngay</Text>
+            <Text style={styles.subtitle}>Tạo tài khoản của bạn</Text>
 
-          <Animatable.View animation="fadeInUp" duration={800} delay={200} style={styles.formContainer}>
-            {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, inputErrors.email && styles.inputError]}
-                placeholder="Email"
-                placeholderTextColor="#999"
-                onChangeText={(value) => {
-                  setEmail(value);
-                  validateEmail(value);
-                }}
-                value={email}
-                keyboardType="email-address"
-              />
-              {emailCheckIcon && (
-                <Ionicons
-                  name={emailCheckIcon}
-                  size={20}
-                  style={[
-                    styles.inputIconRight,
-                    { color: emailValid ? '#4CAF50' : '#F44336' }
-                  ]}
+            <Animatable.View animation="fadeInUp" duration={800} delay={200} style={styles.formContainer}>
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <Ionicons name="mail-outline" size={20} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, inputErrors.email && styles.inputError]}
+                  placeholder="Email"
+                  placeholderTextColor="#999"
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    validateEmail(value);
+                  }}
+                  value={email}
+                  keyboardType="email-address"
+                />
+                {emailCheckIcon && (
+                  <Ionicons
+                    name={emailCheckIcon}
+                    size={20}
+                    style={[
+                      styles.inputIconRight,
+                      { color: emailValid ? '#4CAF50' : '#F44336' }
+                    ]}
+                  />
+                )}
+              </View>
+              {inputErrors.email && <Text style={styles.errorText}>{inputErrors.email}</Text>}
+
+              {/* Name Input */}
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, inputErrors.name && styles.inputError]}
+                  placeholder="Họ và tên"
+                  placeholderTextColor="#999"
+                  onChangeText={setName}
+                  value={name}
+                />
+              </View>
+              {inputErrors.name && <Text style={styles.errorText}>{inputErrors.name}</Text>}
+
+              {/* Phone Input */}
+              <View style={styles.inputContainer}>
+                <Ionicons name="call-outline" size={20} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, inputErrors.phone && styles.inputError]}
+                  placeholder="Số điện thoại"
+                  placeholderTextColor="#999"
+                  onChangeText={setPhone}
+                  value={phone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+              {inputErrors.phone && <Text style={styles.errorText}>{inputErrors.phone}</Text>}
+
+              {/* Date of Birth Input */}
+              <View style={styles.inputContainer}>
+                <Ionicons name="calendar-outline" size={20} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { flex: 1 }, inputErrors.dob && styles.inputError]}
+                  placeholder="Ngày sinh (YYYY-MM-DD)"
+                  placeholderTextColor="#999"
+                  value={dob}
+                  editable={false}
+                />
+                <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                  <Ionicons name="chevron-down-outline" size={20} style={styles.inputIconRight} />
+                </TouchableOpacity>
+              </View>
+              {showDatePicker && (
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={dob ? new Date(dob) : new Date()}
+                  mode="date"
+                  is24Hour={true}
+                  display={Platform.OS === 'ios' ? 'spinner' : 'spinner'}
+                  onChange={onChangeDob}
                 />
               )}
-            </View>
-            {inputErrors.email && <Text style={styles.errorText}>{inputErrors.email}</Text>}
+              {inputErrors.dob && <Text style={styles.errorText}>{inputErrors.dob}</Text>}
 
-            {/* Name Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, inputErrors.name && styles.inputError]}
-                placeholder="Họ và tên"
-                placeholderTextColor="#999"
-                onChangeText={setName}
-                value={name}
-              />
-            </View>
-            {inputErrors.name && <Text style={styles.errorText}>{inputErrors.name}</Text>}
-
-            {/* Phone Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="call-outline" size={20} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, inputErrors.phone && styles.inputError]}
-                placeholder="Số điện thoại"
-                placeholderTextColor="#999"
-                onChangeText={setPhone}
-                value={phone}
-                keyboardType="phone-pad"
-              />
-            </View>
-            {inputErrors.phone && <Text style={styles.errorText}>{inputErrors.phone}</Text>}
-
-            {/* Date of Birth Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="calendar-outline" size={20} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { flex: 1 }, inputErrors.dob && styles.inputError]}
-                placeholder="Ngày sinh (YYYY-MM-DD)"
-                placeholderTextColor="#999"
-                value={dob}
-                editable={false}
-              />
-              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-                <Ionicons name="chevron-down-outline" size={20} style={styles.inputIconRight} />
-              </TouchableOpacity>
-            </View>
-            {showDatePicker && (
-              <DateTimePicker
-                testID="dateTimePicker"
-                value={dob ? new Date(dob) : new Date()}
-                mode="date"
-                is24Hour={true}
-                display={Platform.OS === 'ios' ? 'spinner' : 'spinner'}
-                onChange={onChangeDob}
-              />
-            )}
-            {inputErrors.dob && <Text style={styles.errorText}>{inputErrors.dob}</Text>}
-
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, inputErrors.password && styles.inputError]}
-                placeholder="Mật khẩu"
-                placeholderTextColor="#999"
-                secureTextEntry={!showPassword}
-                onChangeText={(value) => {
-                  setPassword(value);
-                  validatePassword(value);
-                }}
-                value={password}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons 
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                  size={20} 
-                  style={styles.inputIconRight} 
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, inputErrors.password && styles.inputError]}
+                  placeholder="Mật khẩu"
+                  placeholderTextColor="#999"
+                  secureTextEntry={!showPassword}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    validatePassword(value);
+                  }}
+                  value={password}
                 />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons 
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                    size={20} 
+                    style={styles.inputIconRight} 
+                  />
+                </TouchableOpacity>
+              </View>
+              {inputErrors.password && <Text style={styles.errorText}>{inputErrors.password}</Text>}
+
+              {/* Password Checklist */}
+              <View style={styles.passwordChecklist}>
+                <Text style={[styles.checkItem, passwordStrength.length && styles.checkItemValid]}>
+                  • Tối thiểu 8 ký tự
+                </Text>
+                <Text style={[styles.checkItem, passwordStrength.upper && styles.checkItemValid]}>
+                  • Ít nhất 1 chữ cái in hoa
+                </Text>
+                <Text style={[styles.checkItem, passwordStrength.lower && styles.checkItemValid]}>
+                  • Ít nhất 1 chữ cái thường
+                </Text>
+                <Text style={[styles.checkItem, passwordStrength.number && styles.checkItemValid]}>
+                  • Ít nhất 1 số
+                </Text>
+                <Text style={[styles.checkItem, passwordStrength.special && styles.checkItemValid]}>
+                  • Ít nhất 1 ký tự đặc biệt
+                </Text>
+              </View>
+
+              {/* Register Button */}
+              <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
+                <Text style={styles.registerButtonText}>Đăng ký</Text>
               </TouchableOpacity>
-            </View>
-            {inputErrors.password && <Text style={styles.errorText}>{inputErrors.password}</Text>}
 
-            {/* Password Checklist */}
-            <View style={styles.passwordChecklist}>
-              <Text style={[styles.checkItem, passwordStrength.length && styles.checkItemValid]}>
-                • Tối thiểu 8 ký tự
-              </Text>
-              <Text style={[styles.checkItem, passwordStrength.upper && styles.checkItemValid]}>
-                • Ít nhất 1 chữ cái in hoa
-              </Text>
-              <Text style={[styles.checkItem, passwordStrength.lower && styles.checkItemValid]}>
-                • Ít nhất 1 chữ cái thường
-              </Text>
-              <Text style={[styles.checkItem, passwordStrength.number && styles.checkItemValid]}>
-                • Ít nhất 1 số
-              </Text>
-              <Text style={[styles.checkItem, passwordStrength.special && styles.checkItemValid]}>
-                • Ít nhất 1 ký tự đặc biệt
-              </Text>
-            </View>
-
-            {/* Register Button */}
-            <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-              <Text style={styles.registerButtonText}>Đăng ký</Text>
-            </TouchableOpacity>
-
-            {/* Link đến màn hình Đăng nhập */}
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.loginText}>Đã có tài khoản? Đăng nhập</Text>
-            </TouchableOpacity>
+              {/* Link đến màn hình Đăng nhập */}
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.loginText}>Đã có tài khoản? Đăng nhập</Text>
+              </TouchableOpacity>
+            </Animatable.View>
           </Animatable.View>
-        </Animatable.View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
