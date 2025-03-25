@@ -13,7 +13,7 @@ import {
   TextInput,
   Image
 } from 'react-native';
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getFirestore,
   collection,
@@ -27,6 +27,7 @@ import { getDatabase, ref, remove, update } from 'firebase/database';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import styles from '../styles/AdminHomeScreenStyles';
 
 // Cấu hình Firebase
 const firebaseConfig = {
@@ -38,38 +39,43 @@ const firebaseConfig = {
   appId: "1:360774980468:android:6d217dcfc513b0ae9bd221",
 };
 
-// Khởi tạo app và các dịch vụ Firebase
-const app = initializeApp(firebaseConfig);
+// Khởi tạo Firebase App một lần duy nhất
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
 const db = getFirestore(app);
 const auth = getAuth(app);
 const rtdb = getDatabase(app);
 
-// Mảng màu nền luân phiên cho các thẻ user
+// Mảng màu nền cho các thẻ người dùng
 const userColors = ['#FFE4C4', '#FFD1B3', '#FFFAE1', '#FEE2E2', '#CDEAFE'];
 
 const AdminHomeScreen = () => {
   // State lưu danh sách người dùng
   const [users, setUsers] = useState([]);
-  // State điều khiển Modal Quản lý User
+  // State điều khiển modal quản lý khách hàng
   const [userManagementVisible, setUserManagementVisible] = useState(false);
-  // State điều khiển Modal Quản lý Vân tay
+  // State điều khiển modal quản lý vân tay
   const [fingerprintManagementVisible, setFingerprintManagementVisible] = useState(false);
-  // State điều khiển Modal nhập ID vân tay
+  // State điều khiển modal nhập ID vân tay
   const [isFingerprintInputVisible, setFingerprintInputVisible] = useState(false);
-  // State lưu ID vân tay người dùng nhập
+  // State lưu giá trị nhập của fingerprint ID
   const [fingerprintInput, setFingerprintInput] = useState('');
-  // State lưu user nào đang thêm ID vân tay
+  // State lưu id của user đang được thêm vân tay
   const [selectedUserForFingerprint, setSelectedUserForFingerprint] = useState(null);
 
-  // Dùng để điều hướng
+  // Hook điều hướng
   const navigation = useNavigation();
 
-  // 1) Tạo mảng màu để hiển thị hiệu ứng "nhấp nháy" RGB
-  const blinkingColors = ['/#FFB6C1', '#DDA0DD', '#FFFF00'];
-  // 2) State để lưu chỉ số màu hiện tại
+  // Mảng màu dùng cho hiệu ứng "nhấp nháy" cho text "Chào mừng Admin"
+  const blinkingColors = ['red', 'green', 'blue'];
+  // State lưu chỉ số màu hiện tại cho hiệu ứng nhấp nháy
   const [colorIndex, setColorIndex] = useState(0);
 
-  // Lấy danh sách user từ Firestore
+  // Lấy danh sách người dùng từ Firestore
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'users'),
@@ -89,22 +95,22 @@ const AdminHomeScreen = () => {
 
   // Chặn nút Back trên Android
   useEffect(() => {
-    const onBackPress = () => true; // true = chặn quay lui
+    const onBackPress = () => true; // Trả về true để chặn chức năng back
     BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => {
       BackHandler.removeEventListener("hardwareBackPress", onBackPress);
     };
   }, []);
 
-  // 3) Dùng useEffect để tự động đổi màu text tiêu đề (tạo hiệu ứng nhấp nháy)
+  // Hiệu ứng nhấp nháy cho text "Chào mừng Admin"
   useEffect(() => {
     const interval = setInterval(() => {
       setColorIndex(prevIndex => (prevIndex + 1) % blinkingColors.length);
-    }, 500); // 500ms đổi màu một lần
+    }, 500); // Thay đổi màu mỗi 500ms
     return () => clearInterval(interval);
   }, []);
 
-  // 4) Tạo style động cho text (đổi color theo state colorIndex)
+  // Style động cho hiệu ứng nhấp nháy dựa vào state colorIndex
   const blinkingStyle = {
     color: blinkingColors[colorIndex],
   };
@@ -119,18 +125,14 @@ const AdminHomeScreen = () => {
     }
   };
 
-  // Xác nhận đăng xuất
+  // Xác nhận đăng xuất với hộp thoại Alert
   const confirmLogout = () => {
     Alert.alert(
       "Đăng xuất",
       "Bạn muốn đăng xuất?",
       [
         { text: "Hủy", style: "cancel" },
-        {
-          text: "Đăng xuất",
-          style: "destructive",
-          onPress: handleLogout
-        }
+        { text: "Đăng xuất", style: "destructive", onPress: handleLogout }
       ],
       { cancelable: true }
     );
@@ -141,17 +143,17 @@ const AdminHomeScreen = () => {
     Alert.alert("Xem camera", "Tính năng này sẽ được bổ sung sau!");
   };
 
-  // Hàm mở modal Quản lý vân tay
+  // Mở modal quản lý vân tay
   const handleAddFingerprint = () => {
     setFingerprintManagementVisible(true);
   };
 
-  // Hàm mở modal Quản lý người dùng
+  // Mở modal quản lý người dùng
   const openUserManagement = () => {
     setUserManagementVisible(true);
   };
 
-  // Hàm xóa người dùng
+  // Hàm xóa người dùng với xác nhận
   const handleDeleteUser = (userId, userName) => {
     Alert.alert(
       "Xác nhận xóa",
@@ -163,9 +165,9 @@ const AdminHomeScreen = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              // Xóa user trong Firestore
+              // Xóa user khỏi Firestore
               await deleteDoc(doc(db, 'users', userId));
-              // Xóa user trong Realtime Database
+              // Xóa user khỏi Realtime Database
               await remove(ref(rtdb, 'users/' + userId));
             } catch (error) {
               Alert.alert("Error", "Unable to delete user, please try again.");
@@ -177,81 +179,73 @@ const AdminHomeScreen = () => {
     );
   };
 
-  // Khi bấm thêm vân tay cho user nào đó
+  // Khi bấm thêm vân tay cho user, lưu lại id của user và mở modal nhập ID
   const doAddFingerprint = (userId) => {
     setSelectedUserForFingerprint(userId);
     setFingerprintInput('');
     setFingerprintInputVisible(true);
   };
 
-  // Xác nhận thêm vân tay (sau khi nhập ID)
+  // Hàm xác nhận thêm vân tay, lưu ID dưới dạng number (không phải mảng)
   const handleFingerprintInputConfirm = async () => {
-    const fpId = fingerprintInput.trim();
-    if (!fpId) {
+    const inputStr = fingerprintInput.trim();
+    if (!inputStr) {
       Alert.alert("Lỗi", "Fingerprint ID không được để trống.");
       return;
     }
-
-    // Kiểm tra ID đã tồn tại trong hệ thống chưa
+    // Chuyển chuỗi nhập sang số nguyên
+    const fpIdNumber = parseInt(inputStr, 10);
+    if (isNaN(fpIdNumber)) {
+      Alert.alert("Lỗi", "Fingerprint ID phải là số nguyên.");
+      return;
+    }
+    // Kiểm tra xem fingerprint đã tồn tại chưa (so sánh kiểu number)
     const fpExists = users.some(user => {
-      const ids = Array.isArray(user.ID)
-        ? user.ID
-        : (typeof user.ID === 'string' ? [user.ID] : []);
-      return ids.includes(fpId);
+      const currentID = user.ID;
+      return Number(currentID) === fpIdNumber;
     });
     if (fpExists) {
       Alert.alert("Lỗi", "Fingerprint ID đã tồn tại, vui lòng nhập lại.");
       return;
     }
-
     try {
-      // Lấy doc user cần thêm ID
       const userDocRef = doc(db, 'users', selectedUserForFingerprint);
-      const selectedUser = users.find(u => u.id === selectedUserForFingerprint);
-
-      // Gom ID vân tay cũ + ID mới
-      let newIDs = [];
-      if (selectedUser && selectedUser.ID) {
-        const currentIDs = Array.isArray(selectedUser.ID)
-          ? selectedUser.ID
-          : (typeof selectedUser.ID === 'string' ? [selectedUser.ID] : []);
-        newIDs = [...currentIDs, fpId];
-      } else {
-        newIDs = [fpId];
-      }
-
-      // Cập nhật Firestore
-      await updateDoc(userDocRef, { ID: newIDs });
-      // Cập nhật Realtime Database
-      await update(ref(rtdb, `users/${selectedUserForFingerprint}`), { ID: newIDs });
-
-      // Ẩn modal nhập ID
+      // Cập nhật Firestore và Realtime Database với giá trị số trực tiếp
+      await updateDoc(userDocRef, { ID: fpIdNumber });
+      await update(ref(rtdb, `users/${selectedUserForFingerprint}`), { ID: fpIdNumber });
       setFingerprintInputVisible(false);
     } catch (error) {
       Alert.alert("Error", "Unable to add fingerprint, please try again.");
     }
   };
 
-  // Hàm xóa ID vân tay của user
+  // Hàm thực hiện xóa vân tay: nếu Fingerprint ID trùng khớp thì set về null
   const doRemoveFingerprint = async (userId, fpId) => {
     try {
       const userDocRef = doc(db, 'users', userId);
       const selectedUser = users.find(u => u.id === userId);
-
-      if (selectedUser && selectedUser.ID) {
-        const currentIDs = Array.isArray(selectedUser.ID)
-          ? selectedUser.ID
-          : (typeof selectedUser.ID === 'string' ? [selectedUser.ID] : []);
-        const updatedIDs = currentIDs.filter(id => id !== fpId);
-
-        // Cập nhật Firestore
-        await updateDoc(userDocRef, { ID: updatedIDs });
-        // Cập nhật Realtime Database
-        await update(ref(rtdb, `users/${userId}`), { ID: updatedIDs });
+      if (selectedUser && selectedUser.ID != null) {
+        if (Number(selectedUser.ID) === fpId) {
+          await updateDoc(userDocRef, { ID: null });
+          await update(ref(rtdb, `users/${userId}`), { ID: null });
+        }
       }
     } catch (error) {
       Alert.alert("Error", "Unable to remove fingerprint, please try again.");
     }
+  };
+
+  // Hàm xác nhận xóa vân tay (hiển thị hộp thoại Alert)
+  const confirmRemoveFingerprint = (userId, fpId) => {
+    Alert.alert(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa vân tay này?",
+      [
+        { text: "Hủy", style: "cancel" },
+        { text: "Xóa", style: "destructive", onPress: () => doRemoveFingerprint(userId, fpId) }
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -260,18 +254,12 @@ const AdminHomeScreen = () => {
 
         {/* Header với nền gradient */}
         <LinearGradient
-          colors={['#FAF1E6FF', '#AADFF0FF']}
+          colors={['#FE8C00', '#F83600']}
           style={styles.header}
         >
-          {/*
-            Đã loại bỏ nút 3 gạch (hamburger) bên trái
-            Thay đổi text thành "Chào mừng Admin" với hiệu ứng RGB nhấp nháy
-          */}
           <Text style={[styles.headerTitle, blinkingStyle]}>
             Chào mừng Admin
           </Text>
-
-          {/* Nút đăng xuất nằm bên phải */}
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={confirmLogout}
@@ -288,9 +276,8 @@ const AdminHomeScreen = () => {
           <Ionicons name="chevron-forward-outline" size={20} color="#F83600" />
         </View>
 
-        {/* Danh sách camera (dạng ScrollView) */}
+        {/* Danh sách camera */}
         <ScrollView contentContainerStyle={styles.cameraList}>
-          {/* Camera 1 */}
           <TouchableOpacity style={styles.cameraCard} onPress={handleViewCamera}>
             <Image
               source={{ uri: 'https://via.placeholder.com/350x200?text=Phòng+khách' }}
@@ -299,8 +286,6 @@ const AdminHomeScreen = () => {
             />
             <Text style={styles.cameraLabel}>#Phòng khách</Text>
           </TouchableOpacity>
-
-          {/* Camera 2 */}
           <TouchableOpacity style={styles.cameraCard} onPress={handleViewCamera}>
             <Image
               source={{ uri: 'https://via.placeholder.com/350x200?text=Cam+nhà+cậu' }}
@@ -311,47 +296,31 @@ const AdminHomeScreen = () => {
           </TouchableOpacity>
         </ScrollView>
 
-        {/*
-          Thanh bottom tab, đã loại bỏ "Khoảnh khắc" và "Quản lý",
-          thay vào đó thêm "Quản lý vân tay" và "Quản lý khách hàng"
-        */}
+        {/* Thanh bottom tab */}
         <View style={styles.bottomTabContainer}>
-
-          {/* Trang chủ (chưa gắn logic gì) */}
           <TouchableOpacity style={styles.tabItem}>
             <Ionicons name="home-outline" size={22} color="#F83600" />
             <Text style={styles.tabText}>Trang chủ</Text>
           </TouchableOpacity>
-
-          {/* Quản lý vân tay */}
           <TouchableOpacity style={styles.tabItem} onPress={handleAddFingerprint}>
             <Ionicons name="finger-print-outline" size={22} color="#F83600" />
             <Text style={styles.tabText}>Vân tay</Text>
           </TouchableOpacity>
-
-          {/* Quản lý khách hàng */}
           <TouchableOpacity style={styles.tabItem} onPress={openUserManagement}>
             <Ionicons name="people-outline" size={22} color="#F83600" />
             <Text style={styles.tabText}>Khách hàng</Text>
           </TouchableOpacity>
-
-          {/* Thông báo (chưa gắn logic) */}
           <TouchableOpacity style={styles.tabItem}>
             <Ionicons name="notifications-outline" size={22} color="#F83600" />
             <Text style={styles.tabText}>Thông báo</Text>
           </TouchableOpacity>
-
-          {/* Cài đặt (chưa gắn logic) */}
           <TouchableOpacity style={styles.tabItem}>
             <Ionicons name="settings-outline" size={22} color="#F83600" />
             <Text style={styles.tabText}>Cài đặt</Text>
           </TouchableOpacity>
         </View>
 
-        {/*
-          Modal Quản lý người dùng
-          Bật/tắt bằng userManagementVisible
-        */}
+        {/* Modal Quản lý người dùng */}
         <Modal
           visible={userManagementVisible}
           animationType="slide"
@@ -413,10 +382,7 @@ const AdminHomeScreen = () => {
           </SafeAreaView>
         </Modal>
 
-        {/*
-          Modal Quản lý vân tay
-          Bật/tắt bằng fingerprintManagementVisible
-        */}
+        {/* Modal Quản lý vân tay */}
         <Modal
           visible={fingerprintManagementVisible}
           animationType="slide"
@@ -441,10 +407,8 @@ const AdminHomeScreen = () => {
                 <Text style={styles.noUserText}>Chưa có người dùng nào.</Text>
               ) : (
                 users.map((user, index) => {
-                  // Lấy danh sách ID vân tay (nếu có)
-                  const ids = Array.isArray(user.ID)
-                    ? user.ID
-                    : (typeof user.ID === 'string' ? [user.ID] : []);
+                  // Nếu có Fingerprint ID (kiểu number) thì hiển thị trực tiếp
+                  const fingerprint = user.ID;
                   return (
                     <View
                       key={user.id}
@@ -456,19 +420,17 @@ const AdminHomeScreen = () => {
                       <Text style={styles.fpUserName}>
                         {user.displayName || "Chưa có tên"}
                       </Text>
-                      {ids.length > 0 && (
+                      {fingerprint != null && (
                         <View style={styles.fingerprintList}>
-                          {ids.map((id, idx) => (
-                            <View key={idx} style={styles.fingerprintItem}>
-                              <Text style={styles.fingerprintText}>ID: {id}</Text>
-                              <TouchableOpacity
-                                onPress={() => doRemoveFingerprint(user.id, id)}
-                                style={styles.fpRemoveButton}
-                              >
-                                <Ionicons name="trash-outline" size={20} color="#fff" />
-                              </TouchableOpacity>
-                            </View>
-                          ))}
+                          <View style={styles.fingerprintItem}>
+                            <Text style={styles.fingerprintText}>ID: {fingerprint}</Text>
+                            <TouchableOpacity
+                              onPress={() => confirmRemoveFingerprint(user.id, fingerprint)}
+                              style={styles.fpRemoveButton}
+                            >
+                              <Ionicons name="trash-outline" size={20} color="#fff" />
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       )}
                       <View style={styles.fpActionButtons}>
@@ -487,9 +449,7 @@ const AdminHomeScreen = () => {
           </SafeAreaView>
         </Modal>
 
-        {/*
-          Modal nhập ID vân tay (hiện khi isFingerprintInputVisible = true)
-        */}
+        {/* Modal nhập ID vân tay */}
         <Modal
           visible={isFingerprintInputVisible}
           animationType="slide"
@@ -503,8 +463,8 @@ const AdminHomeScreen = () => {
                 style={styles.input}
                 value={fingerprintInput}
                 onChangeText={setFingerprintInput}
-                placeholder="Nhập ID (string)"
-                keyboardType="default"
+                placeholder="Nhập ID (số nguyên)"
+                keyboardType="number-pad"
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity
@@ -523,345 +483,10 @@ const AdminHomeScreen = () => {
             </View>
           </View>
         </Modal>
+
       </View>
     </SafeAreaView>
   );
 };
-
-// CSS (StyleSheet)
-const styles = StyleSheet.create({
-  // Vùng an toàn cho iOS
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFF7EC',
-  },
-  // Container tổng
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF7EC',
-  },
-  // Header
-  header: {
-    flexDirection: 'row',             // Sắp xếp ngang
-    alignItems: 'center',             // Canh giữa theo trục dọc
-    justifyContent: 'center',         // Canh giữa theo trục ngang
-    paddingVertical: Platform.OS === 'ios' ? 20 : 15,
-    paddingHorizontal: 10,
-    borderBottomLeftRadius: 20,       // Bo góc dưới bên trái
-    borderBottomRightRadius: 20,      // Bo góc dưới bên phải
-    position: 'relative',
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: Platform.OS === 'ios' ? 22 : 20,
-    fontWeight: 'bold',
-  },
-  // Nút đăng xuất (góc phải)
-  logoutButton: {
-    position: 'absolute',
-    right: 15,
-    top: 15,
-    width: 40,
-    height: 40,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // Hiệu ứng đổ bóng
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
-    zIndex: 2,
-  },
-
-  // Khu vực "Địa điểm mặc định"
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#FFF',
-    marginHorizontal: 10,
-    marginTop: 10,
-    borderRadius: 10,
-    // Đổ bóng nhẹ
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  locationText: {
-    flex: 1,
-    color: '#F83600',
-    fontSize: 14,
-    marginRight: 8,
-  },
-
-  // Danh sách camera (dạng ScrollView)
-  cameraList: {
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 80, // Chừa chỗ cho bottom tab
-  },
-  cameraCard: {
-    backgroundColor: '#ccc',
-    borderRadius: 10,
-    marginBottom: 15,
-    overflow: 'hidden',
-    // Đổ bóng
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cameraImage: {
-    width: '100%',
-    height: 200,
-  },
-  cameraLabel: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-
-  // Thanh bottom tab
-  bottomTabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 60,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    // Đổ bóng
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-  },
-  tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabText: {
-    fontSize: 12,
-    marginTop: 2,
-    color: '#F83600',
-  },
-
-  // Modal chung (overlay)
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-  },
-  // User Management
-  userManagementContainer: {
-    flex: 1,
-    backgroundColor: '#FFF7EC',
-  },
-  umHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Platform.OS === 'ios' ? 20 : 15,
-    paddingHorizontal: 10,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    position: 'relative',
-  },
-  umHeaderTitle: {
-    color: '#fff',
-    fontSize: Platform.OS === 'ios' ? 22 : 20,
-    fontWeight: 'bold',
-  },
-  umCloseButton: {
-    position: 'absolute',
-    right: 15,
-    top: 15,
-    padding: 10,
-  },
-  umContent: {
-    padding: 16,
-    paddingTop: 20,
-  },
-  noUserText: {
-    fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  userItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-    // Đổ bóng
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  userInfoContainer: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  userInfo: {
-    fontSize: 14,
-    color: '#333',
-  },
-  deleteButton: {
-    backgroundColor: '#EB5757',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-
-  // Fingerprint Management
-  fingerprintContainer: {
-    flex: 1,
-    backgroundColor: '#FFF7EC',
-  },
-  fpHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Platform.OS === 'ios' ? 20 : 15,
-    paddingHorizontal: 10,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    position: 'relative',
-  },
-  fpHeaderTitle: {
-    color: '#fff',
-    fontSize: Platform.OS === 'ios' ? 22 : 20,
-    fontWeight: 'bold',
-  },
-  fpCloseButton: {
-    position: 'absolute',
-    right: 15,
-    top: 15,
-    padding: 10,
-  },
-  fpContent: {
-    padding: 16,
-    paddingTop: 20,
-  },
-  fpUserItem: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-    // Đổ bóng
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  fpUserName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  fingerprintList: {
-    marginTop: 8,
-  },
-  fingerprintItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#555',
-    padding: 4,
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  fingerprintText: {
-    color: '#fff',
-    marginRight: 8,
-  },
-  fpActionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  fpAddButton: {
-    backgroundColor: '#4CAF50',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fpRemoveButton: {
-    backgroundColor: '#EB5757',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-
-  // Modal nhập Fingerprint ID
-  fingerprintInputModalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fingerprintInputModal: {
-    width: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#F83600',
-    borderRadius: 8,
-  },
-});
 
 export default AdminHomeScreen;

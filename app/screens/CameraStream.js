@@ -1,7 +1,8 @@
 // CameraStream.js
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View } from 'react-native';
 import { WebView } from 'react-native-webview';
+import styles from '../styles/CameraStreamStyles';
 
 const CameraStream = () => {
   // Thay đổi IP và endpoint cho phù hợp với cấu hình của ESP32-CAM
@@ -17,15 +18,5 @@ const CameraStream = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1 
-  },
-  webview: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
-  },
-});
 
 export default CameraStream;
