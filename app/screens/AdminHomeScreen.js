@@ -8,7 +8,6 @@ import {
   Alert,
   BackHandler,
   Modal,
-  Platform,
   SafeAreaView,
   TextInput,
   Image
